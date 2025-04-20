@@ -18,7 +18,7 @@ struct NutritionalFactsView: View {
         VStack {
             Text("Get Nutrition Facts").font(.title).padding()
             Text(message).foregroundColor(Color.red)
-            Spacer()
+            //Spacer()
             // Enter the food item name to get the nutrition facts
             TextField("Enter food item name (e.g., apple)", text: $foodItemToSearch).textFieldStyle(RoundedBorderTextFieldStyle()).padding().autocorrectionDisabled()
             Button("Search") {

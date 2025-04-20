@@ -58,7 +58,7 @@ struct DisplayItemsView: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack {
                 // Display each item from the grocery list with their corresponding category
                 List {
@@ -90,15 +90,23 @@ struct DisplayItemsView: View {
                         }
                     }
                 }.searchable(text: $searchQuery, prompt: "Search for an item")
+                    .listStyle(InsetGroupedListStyle())
                 // Get Nutritional Facts
                 NavigationLink(destination: NutritionalFactsView())
                 {
                     Label("Get Nutritional Facts", systemImage: "fork.knife").padding().foregroundColor(Color("DefaultColor"))
                 }
                 
-            }.sheet(isPresented: $addGroceryItemSheetView) {
+            }.navigationTitle("Items for \(groceryList.name)")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button(action: { addGroceryItemSheetView = true }) {
+                            Image(systemName: "plus")
+                        }
+                    }
+                }.sheet(isPresented: $addGroceryItemSheetView) {
                 VStack {
-                    Text("Add Grocery Item").font(.title2).bold(true)
+                    Text("Add Grocery Item").font(.title2).bold(true).padding(.bottom, 15)
                     Text(message).foregroundColor(.red)
                     // Enter item name
                     TextField("Name", text: $addGroceryItemName).autocorrectionDisabled().padding().overlay(
@@ -121,42 +129,41 @@ struct DisplayItemsView: View {
                         Spacer()
                     }
                     
-                        
-                    // Add the item
-                    Button("Add") {
-                        if addGroceryItemName.isEmpty {
-                            message = "Enter a name"
-                            return
-                        }
-                        displayItemsViewModel.addItem(itemToAddName: addGroceryItemName,
-                                itemToAddCategory: addGroceryItemCategory,
-                                itemToAddNotes: addGroceryItemNotes, from: groceryList, to: modelContext)
-                        addGroceryItemSheetView = false
-                        
-                        // Reset fields
-                        addGroceryItemName = ""
-                        addGroceryItemCategory = .other
-                        addGroceryItemNotes = ""
-                                                
+                    HStack {
+                        Spacer()
+                        // Add the item
+                        Button("Add") {
+                            if addGroceryItemName.isEmpty {
+                                message = "Enter a name"
+                                return
+                            }
+                            displayItemsViewModel.addItem(itemToAddName: addGroceryItemName,
+                                                          itemToAddCategory: addGroceryItemCategory,
+                                                          itemToAddNotes: addGroceryItemNotes, from: groceryList, to: modelContext)
+                            addGroceryItemSheetView = false
+                            
+                            // Reset fields
+                            addGroceryItemName = ""
+                            addGroceryItemCategory = .other
+                            addGroceryItemNotes = ""
+                            
+                        }.frame(width: 100).padding()
+                            .background(RoundedRectangle(cornerRadius: 8).fill(Color("DefaultColor")))
+                            .foregroundColor(.white)
+                        Spacer()
+                        Button("Cancel") {
+                            addGroceryItemSheetView = false // Close the sheet
+                        }.frame(width: 100).padding()
+                            .background(RoundedRectangle(cornerRadius: 8).fill(Color("DefaultColor")))
+                            .foregroundColor(.white)
+                        Spacer()
                     }
-                    .padding()
-
-                    Button("Cancel") {
-                        addGroceryItemSheetView = false // Close the sheet
-                    }
-                    .padding()
                     
                 }.padding()
+                
             }
-        }.listStyle(InsetGroupedListStyle())
-            .navigationTitle("Items for \(groceryList.name)")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { addGroceryItemSheetView = true }) {
-                        Image(systemName: "plus")
-                    }
-                }
-            }
+        }
+            
     }
 }
 
