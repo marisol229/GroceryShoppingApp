@@ -30,6 +30,8 @@ struct NutritionalFactsView: View {
                 }
                 
             }.padding()
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color("DefaultColor")))
+                .foregroundColor(.white)
             
             if !viewModel.foodName.isEmpty {
                 Text("\(viewModel.foodName)").font(.headline).padding(.top)
