@@ -70,7 +70,7 @@ struct ShoppingListsView: View {
                 // Nearby Stores
                 NavigationLink(destination: NearbyStoresView())
                 {
-                    Text("Find Nearby Stores").padding().foregroundColor(Color("DefaultColor"))
+                    Label("Find Nearby Stores", systemImage: "mappin.and.ellipse").padding().foregroundColor(Color("DefaultColor"))
                 }
 
             }.alert("Add Grocery List", isPresented: $addGroceryListAlert, actions: { // alert pops up to add a grocery list

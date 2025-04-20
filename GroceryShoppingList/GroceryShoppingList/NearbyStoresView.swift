@@ -51,6 +51,14 @@ struct NearbyStoresView: View {
                     .foregroundColor(.gray)
                     .padding()
             } else {
+                // Show first store on map
+                Map {
+                    if let centerCoordinate = viewModel.stores.first?.coordinate{
+                        Marker(viewModel.stores.first!.name, coordinate: centerCoordinate)
+                    }
+                }.mapControlVisibility(.automatic).frame(height: 200)
+                    .cornerRadius(10)
+                    .padding()
                 List {
                     ForEach(viewModel.stores) { store in
                         VStack(alignment: .leading, spacing: 4) {
@@ -155,7 +163,8 @@ class NearbyStoresViewModel: ObservableObject {
                         id: UUID().uuidString,
                         name: mapItem.name ?? "Unknown Store",
                         address: self.formatAddress(from: mapItem.placemark),
-                        distance: distance
+                        distance: distance,
+                        coordinate: mapItem.placemark.coordinate
                     )
                 }
                 
@@ -210,13 +219,15 @@ struct GroceryStore: Identifiable {
     let address: String
     let distance: String
     var distanceValue: Double
+    let coordinate: CLLocationCoordinate2D
     
-    init(id: String, name: String, address: String, distance: (String, Double)) {
+    init(id: String, name: String, address: String, distance: (String, Double), coordinate: CLLocationCoordinate2D) {
         self.id = id
         self.name = name
         self.address = address
         self.distance = distance.0
         self.distanceValue = distance.1
+        self.coordinate = coordinate
     }
 }
 
