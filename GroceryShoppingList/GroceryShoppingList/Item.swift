@@ -14,14 +14,13 @@ final class GroceryItem {
     var name: String
     var category: GroceryCategory
     var notes: String?
-    var isPurchased: Bool
     
-    init(id: UUID = UUID(), name: String, category: GroceryCategory, notes: String? = nil, isPurchased: Bool = false) {
+    
+    init(id: UUID = UUID(), name: String, category: GroceryCategory, notes: String? = nil) {
         self.id = id
         self.name = name
         self.category = category
         self.notes = notes
-        self.isPurchased = false
     }
 }
 

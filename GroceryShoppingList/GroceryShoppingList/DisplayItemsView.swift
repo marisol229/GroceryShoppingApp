@@ -8,6 +8,29 @@
 import SwiftUI
 import SwiftData
 
+class DisplayItemsViewModel: ObservableObject {
+    
+    // Function to add a grocery item to a list
+    func addItem(itemToAddName: String, itemToAddCategory: GroceryCategory, itemToAddNotes: String?, from groceryList: GroceryList, to modelContext: ModelContext) {
+        withAnimation {
+            let newItem = GroceryItem(name: itemToAddName, category: itemToAddCategory, notes: itemToAddNotes)
+            groceryList.groceryItems.append(newItem)
+            modelContext.insert(newItem)
+            try? modelContext.save()
+        }
+    }
+    
+    // Function to delete a grocery item from a list
+    func deleteItem(offsets: IndexSet, from groceryList: GroceryList, to modelContext: ModelContext) {
+        withAnimation {
+            for index in offsets {
+                modelContext.delete(groceryList.groceryItems[index])
+                try? modelContext.save()
+            }
+        }
+    }
+}
+
 struct DisplayItemsView: View {
     @Bindable var groceryList: GroceryList
     @Environment(\.modelContext) private var modelContext
@@ -18,28 +41,55 @@ struct DisplayItemsView: View {
     @State private var addGroceryItemName: String = "" // for the name of the grocery item to add
     @State private var addGroceryItemCategory: GroceryCategory = .other
     @State private var addGroceryItemNotes: String = ""
-    @State private var addGroceryItemIsPurchased: Bool = false
-
     
+    @StateObject private var displayItemsViewModel = DisplayItemsViewModel() // view model
+    
+    // Search for item
+    @Query private var items: [GroceryItem]
+    @State private var searchQuery:String = ""
+    var filteredGroceryItems: [GroceryItem] {
+        if searchQuery.isEmpty {
+            return groceryList.groceryItems
+        } else {
+            return groceryList.groceryItems.filter {
+                $0.name.localizedCaseInsensitiveContains(searchQuery)
+            }
+        }
+    }
+
     var body: some View {
-        
         NavigationView {
             VStack {
-                // Display each item from the grocery list
+                // Display each item from the grocery list with their corresponding category
                 List {
-                    ForEach(groceryList.groceryItems) { item in
-                        Section(header: Text(item.category.rawValue)) {
-                            VStack(alignment: .leading) {
-                                // Display item name and notes
-                                Text(item.name).font(.headline)
-                                if let notes = item.notes, !notes.isEmpty {
-                                        Text("Notes: \(notes)").font(.subheadline).foregroundColor(.gray)
+                    ForEach(GroceryCategory.allCases, id: \.self) { category in
+                        let categoryGroceryItems = filteredGroceryItems.filter { $0.category == category }
+                        // Display all items for each category
+                        if !categoryGroceryItems.isEmpty {
+                            Section(header: Text(category.rawValue)) {
+                                ForEach(categoryGroceryItems) { item in
+                                    VStack(alignment: .leading) {
+                                        Text(item.name).fontWeight(.semibold)
+                                            .minimumScaleFactor(0.5)
+                                        if let notes = item.notes, !notes.isEmpty {
+                                            Text("Notes: \(notes)").font(.subheadline)
+                                                .foregroundColor(.secondary)
+                                        }
+                                    }
+                                }.onDelete { indexSet in
+                                    for i in indexSet {
+                                        let removeItem = categoryGroceryItems[i]
+                                        // Delete first in the categoryItems and then in the original groceryItems
+                                        if let groceryItemsIndex = groceryList.groceryItems.firstIndex(where: { $0.id == removeItem.id })
+                                        {
+                                            displayItemsViewModel.deleteItem(offsets: IndexSet(integer: groceryItemsIndex), from: groceryList, to: modelContext)
+                                        }
+                                    }
                                 }
-                            }.padding(.vertical, 2)
+                            }
                         }
                     }
-                    .onDelete(perform: deleteItem)
-                }
+                }.searchable(text: $searchQuery, prompt: "Search for an item")
                 // Get Nutritional Facts
                 NavigationLink(destination: NutritionalFactsView())
                 {
@@ -70,8 +120,7 @@ struct DisplayItemsView: View {
                         }.pickerStyle(MenuPickerStyle()).padding()
                         Spacer()
                     }
-                    // Select if the item is purchased or not
-                    Toggle("Is Purchased", isOn: $addGroceryItemIsPurchased).padding()
+                    
                         
                     // Add the item
                     Button("Add") {
@@ -79,18 +128,16 @@ struct DisplayItemsView: View {
                             message = "Enter a name"
                             return
                         }
-                        addItem(itemToAddName: addGroceryItemName,
+                        displayItemsViewModel.addItem(itemToAddName: addGroceryItemName,
                                 itemToAddCategory: addGroceryItemCategory,
-                                itemToAddNotes: addGroceryItemNotes,
-                                itemToAddIsPurchased: addGroceryItemIsPurchased)
+                                itemToAddNotes: addGroceryItemNotes, from: groceryList, to: modelContext)
                         addGroceryItemSheetView = false
                         
                         // Reset fields
                         addGroceryItemName = ""
                         addGroceryItemCategory = .other
                         addGroceryItemNotes = ""
-                        addGroceryItemIsPurchased = false
-                        
+                                                
                     }
                     .padding()
 
@@ -111,27 +158,8 @@ struct DisplayItemsView: View {
                 }
             }
     }
-    
-    // Function to add a grocery item to a list
-    private func addItem(itemToAddName: String, itemToAddCategory: GroceryCategory, itemToAddNotes: String?, itemToAddIsPurchased: Bool) {
-        withAnimation {
-            let newItem = GroceryItem(name: itemToAddName, category: itemToAddCategory, notes: itemToAddNotes, isPurchased: itemToAddIsPurchased)
-            groceryList.groceryItems.append(newItem)
-            modelContext.insert(newItem)
-            try? modelContext.save()
-        }
-    }
-    
-    // Function to delete a grocery item from a list
-    private func deleteItem(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(groceryList.groceryItems[index])
-                try? modelContext.save()
-            }
-        }
-    }
 }
+
 
 /*#Preview {
     DisplayItemsView()

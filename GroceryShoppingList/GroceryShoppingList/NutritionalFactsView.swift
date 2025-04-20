@@ -20,8 +20,7 @@ struct NutritionalFactsView: View {
             Text(message).foregroundColor(Color.red)
             Spacer()
             // Enter the food item name to get the nutrition facts
-            TextField("Enter food item name (e.g., apple)", text: $foodItemToSearch).textFieldStyle(RoundedBorderTextFieldStyle()).padding()
-
+            TextField("Enter food item name (e.g., apple)", text: $foodItemToSearch).textFieldStyle(RoundedBorderTextFieldStyle()).padding().autocorrectionDisabled()
             Button("Search") {
                 if(foodItemToSearch.isEmpty)
                 {
@@ -33,7 +32,7 @@ struct NutritionalFactsView: View {
             }.padding()
             
             if !viewModel.foodName.isEmpty {
-                Text("Nutritional facts for: \(viewModel.foodName)").font(.headline).padding(.top)
+                Text("\(viewModel.foodName)").font(.headline).padding(.top)
                 // Display the nutritional facts
                 List(viewModel.nutrientsReturned) { nutrient in
                     HStack {
@@ -57,39 +56,45 @@ class NutritionalFactsViewModel: ObservableObject {
     func getNutritions(foodItem: String) {
         let urlAsString = "https://api.nal.usda.gov/fdc/v1/foods/search?query=\(foodItem)&api_key=\(apiKey)"
         print(urlAsString)
-        
         let url = URL(string: urlAsString)!
         let urlSession = URLSession.shared
         
         let jsonQuery = urlSession.dataTask(with: url, completionHandler: { data, response, error -> Void in
-            if let data = data {
-                do {
-                    let decoded = try JSONDecoder().decode(NutrientsResult.self, from: data)
-                    DispatchQueue.main.async {
-                        if let foodResult = decoded.foods.first {
-                            self.foodName = foodResult.description
-                            self.nutrientsReturned = foodResult.foodNutrients
-                        }
-                    }
-                } catch {
-                    print("Decoding error:", error)
-                }
+            if (error != nil) {
+                print(error!.localizedDescription)
             }
             
+            // Decode Json results from the API call to mathResults decodable structure
+            let decoder = JSONDecoder()
+            let jsonResult = try! decoder.decode(FoodSearchResult.self, from: data!)
+            
+
+            DispatchQueue.main.async {
+                if let foodResult = jsonResult.foods.first {
+                    self.foodName = "Nutritional facts for: " + foodResult.description
+                    self.nutrientsReturned = foodResult.foodNutrients
+                }
+                else
+                {
+                    print("Cannot display information now for that item.")
+                    self.foodName = "Cannot display information now for that item."
+                    self.nutrientsReturned = []
+                }
+            }
         })
         jsonQuery.resume()
     }
 }
 
-struct NutrientsResult: Codable {
-    let foods: [FoodItemSearch]
+// API Structure
+struct FoodSearchResult: Codable {
+    let foods: [Food]
 }
 
-struct FoodItemSearch: Codable {
+struct Food: Codable {
     let description: String
     let foodNutrients: [FoodNutrient]
 }
-
 struct FoodNutrient: Codable, Identifiable {
     var id: UUID { UUID() }
     let nutrientName: String
